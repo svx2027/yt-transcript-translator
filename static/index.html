@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transcript Translator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 3rem 1rem;
+    }
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      color: #fff;
+    }
+    .input-row {
+      display: flex;
+      gap: 0.5rem;
+      width: 100%;
+      max-width: 640px;
+      margin-bottom: 2rem;
+    }
+    input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #1a1a1a;
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus { border-color: #666; }
+    input::placeholder { color: #555; }
+    button {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      border: none;
+      background: #fff;
+      color: #000;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    button:hover { opacity: 0.85; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .status {
+      color: #888;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+      min-height: 1.4em;
+    }
+    .status.error { color: #f87171; }
+    .transcript-box {
+      width: 100%;
+      max-width: 720px;
+      background: #141414;
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 2rem;
+      white-space: pre-wrap;
+      line-height: 1.7;
+      font-size: 0.95rem;
+      display: none;
+    }
+    .meta {
+      font-size: 0.8rem;
+      color: #555;
+      margin-bottom: 1rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Transcript Translator</h1>
+  <div class="input-row">
+    <input type="text" id="url" placeholder="Paste a YouTube URL..." autofocus>
+    <button id="go" onclick="fetchTranscript()">Go</button>
+  </div>
+  <div class="status" id="status"></div>
+  <div class="meta" id="meta"></div>
+  <div class="transcript-box" id="transcript"></div>
+
+  <script>
+    const urlInput = document.getElementById('url');
+    const btn = document.getElementById('go');
+    const status = document.getElementById('status');
+    const meta = document.getElementById('meta');
+    const transcript = document.getElementById('transcript');
+
+    urlInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') fetchTranscript();
+    });
+
+    async function fetchTranscript() {
+      const url = urlInput.value.trim();
+      if (!url) return;
+
+      btn.disabled = true;
+      status.className = 'status';
+      status.textContent = 'Fetching transcript...';
+      transcript.style.display = 'none';
+      meta.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/transcript', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Something went wrong');
+        }
+
+        const data = await res.json();
+        transcript.textContent = data.transcript;
+        transcript.style.display = 'block';
+
+        if (data.original_language !== 'en') {
+          meta.textContent = `Translated from: ${data.original_language}`;
+          meta.style.display = 'block';
+        }
+        status.textContent = '';
+      } catch (e) {
+        status.className = 'status error';
+        status.textContent = e.message;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
