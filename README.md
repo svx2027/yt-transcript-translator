@@ -28,6 +28,20 @@ uvicorn app:app --reload
 
 Open http://127.0.0.1:8000, paste a YouTube URL, hit Go.
 
+## Tests
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+pytest
+```
+
+Covers the error paths, mocking the transcript subprocess so no live YouTube
+call is needed: a malformed URL (400), a private/deleted video whose fetch
+crashes with no transcript to return (404), a video with no captions at all
+(404, with the real reason surfaced), and a translation failure on a
+non-English transcript (500). The happy path is exercised manually since it
+needs a real video with a live transcript.
+
 ## Honest limits
 
 - Videos with transcripts disabled return a clear 404; there is no ASR

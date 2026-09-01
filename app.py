@@ -34,7 +34,11 @@ def fetch_transcript(video_id: str) -> tuple[str, str]:
         capture_output=True, text=True, timeout=30,
     )
     if result.returncode != 0:
-        raise Exception(result.stderr.strip() or "Failed to fetch transcript")
+        try:
+            reason = json.loads(result.stdout)["error"]
+        except (json.JSONDecodeError, KeyError):
+            reason = result.stderr.strip() or "Failed to fetch transcript"
+        raise Exception(reason)
 
     data = json.loads(result.stdout)
     if "error" in data:
